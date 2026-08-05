@@ -183,6 +183,11 @@ function runMigrations(db: Database.Database): void {
   } catch (err) {
     if (!isDuplicateColumnError(err)) throw err;
   }
+  try {
+    db.exec(`ALTER TABLE accounts ADD COLUMN label TEXT;`);
+  } catch (err) {
+    if (!isDuplicateColumnError(err)) throw err;
+  }
 }
 
 function isDuplicateColumnError(err: unknown): boolean {

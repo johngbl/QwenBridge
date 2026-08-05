@@ -17,6 +17,8 @@ import { anthropicApp } from "../routes/anthropic/index.js";
 import { responsesApp } from "../routes/responses/index.js";
 import { sendOpenAIError } from "./error-helpers.js";
 import { AuthError, NotFoundError } from "../core/errors.js";
+import { app as accountsApp } from "./accounts.js";
+import { app as dashboardApp } from "./dashboard.js";
 import type { QwenAccount } from "../core/accounts.js";
 
 // Module-level state (initialized in startServer)
@@ -118,6 +120,12 @@ app.route("", anthropicApp);
 
 // OpenAI Responses API compatible routes
 app.route("", responsesApp);
+
+// Account management (email/password dashboard API)
+app.route("", accountsApp);
+
+// Dashboard UI (served at / and /dashboard)
+app.route("", dashboardApp);
 
 app.get("/health", async (c) => {
   const status = await watchdog?.getStatus();

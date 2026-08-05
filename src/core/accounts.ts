@@ -7,6 +7,7 @@ export interface QwenAccount {
   id: string;
   email: string;
   password: string;
+  label?: string | null;
   cooldown_until?: number;
   cooldown_reason?: string | null;
 }
@@ -99,7 +100,7 @@ function getCachedAccounts(): QwenAccount[] {
   const db = getDatabase();
   const rows = db
     .prepare(
-      "SELECT id, email, password, cooldown_until, cooldown_reason FROM accounts ORDER BY created_at ASC",
+      "SELECT id, email, password, label, cooldown_until, cooldown_reason FROM accounts ORDER BY created_at ASC",
     )
     .all() as QwenAccount[];
 
@@ -198,4 +199,22 @@ export function updateAccountCooldown(
     "UPDATE accounts SET cooldown_until = ?, cooldown_reason = ? WHERE id = ?",
   ).run(cooldownUntil, reason, id);
   invalidateAccountsCache();
+}
+
+export function updateAccountPassword(id: string, password: string): boolean {
+  const db = getDatabase();
+  const result = db
+    .prepare("UPDATE accounts SET password = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(encrypt(password), id);
+  if (result.changes > 0) invalidateAccountsCache();
+  return result.changes > 0;
+}
+
+export function updateAccountLabel(id: string, label: string): boolean {
+  const db = getDatabase();
+  const result = db
+    .prepare("UPDATE accounts SET label = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(String(label).trim(), id);
+  if (result.changes > 0) invalidateAccountsCache();
+  return result.changes > 0;
 }

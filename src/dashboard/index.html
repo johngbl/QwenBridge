@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QwenBridgeDashboard — Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2358a6ff' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 2 4 6.5v9L12 22l8-6.5v-9L12 2Z'/%3E%3Cpath d='m12 7-4 2.3v4.4L12 16l4-2.3V9.3L12 7Z'/%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js" integrity="sha384-XQqX/4yiUGu+oyr87jvWzRuqBUK/adrY0DunhL+tID9m/9dwSpV8h9Fk/Sg6ifVQ" crossorigin="anonymous" defer></script>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#010409; --card:#161b22; --card2:#1c2230; --elev:#21262d;
+    --border:#2a2f37; --border2:#3d444d;
+    --text:#e6edf3; --muted:#9198a1; --faint:#6e7681;
+    --accent:#58a6ff; --accent-press:#1f6feb; --accent-deep:#1158c7;
+    --ok:#3fb950; --warn:#d29922; --err:#f85149;
+    --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:22px; --s6:30px;
+    --r:8px; --r2:12px;
+    --fs-xs:12px; --fs-sm:13px; --fs-md:14px; --fs-lg:16px; --fs-xl:20px; --fs-hero:28px;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box}
+  html{scrollbar-color:var(--border2) transparent}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5;font-size:var(--fs-sm)}
+  .wrap{max-width:1080px;margin:0 auto;padding:var(--s4) var(--s5) var(--s6)}
+  a{color:var(--accent);text-decoration:none}
+  svg.ic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+  header{position:sticky;top:0;z-index:20;background:rgba(13,17,23,.85);backdrop-filter:blur(10px);
+    display:flex;align-items:center;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;padding:var(--s3) 0;border-bottom:1px solid var(--border)}
+  h1{font-size:var(--fs-xl);margin:0;display:flex;align-items:center;gap:var(--s2);font-weight:700;letter-spacing:-.01em}
+  h1 .logo{width:24px;height:24px;color:var(--accent)}
+  .status-pill{display:inline-flex;align-items:center;gap:var(--s2);padding:6px 13px;border-radius:6px;border:1px solid var(--border);background:var(--card);font-size:var(--fs-sm);font-weight:600}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+  .dot.on{background:var(--ok);box-shadow:0 0 0 3px rgba(63,185,80,.16)}
+  .dot.off{background:var(--err);box-shadow:0 0 0 3px rgba(248,81,73,.16)}
+
+  .tabs{display:flex;gap:2px;overflow-x:auto;margin:var(--s4) 0 var(--s5);border-bottom:1px solid var(--border)}
+  .tab{font-family:inherit;cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);
+    padding:10px 15px;font-size:var(--fs-md);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:color .15s,border-color .15s}
+  .tab svg.ic{font-size:16px}
+  .tab:hover{color:var(--text)}
+  .tab[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
+  .panel{display:none}
+  .panel.active{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4)}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:var(--s5);box-shadow:var(--shadow)}
+  .full{grid-column:1/-1}
+  .card h2{font-size:var(--fs-md);color:var(--text);margin:0 0 var(--s4);display:flex;align-items:center;gap:var(--s2);font-weight:600}
+  .card h2 svg.ic{font-size:17px;color:var(--accent)}
+  .card h2 .spacer{flex:1}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);margin-bottom:var(--s4)}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:var(--s4);box-shadow:var(--shadow)}
+  .kpi .num{font-size:var(--fs-hero);font-weight:700;letter-spacing:-.02em;line-height:1.1}
+  .kpi .lbl{color:var(--muted);font-size:var(--fs-xs);margin-top:2px;display:flex;align-items:center;gap:6px}
+  .kpi .num.ok{color:var(--ok)} .kpi .num.warn{color:var(--warn)} .kpi .num.err{color:var(--err)}
+
+  .row{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2)}
+  .row:last-child{margin-bottom:0}
+  label.k{width:92px;color:var(--muted);font-size:var(--fs-sm);flex-shrink:0}
+  .val{flex:1;font-family:var(--mono);font-size:var(--fs-sm);background:var(--elev);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;overflow:auto;white-space:nowrap;color:var(--text)}
+
+  button{font-family:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--border2);background:var(--elev);color:var(--text);padding:8px 12px;font-size:var(--fs-sm);font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:background .15s,border-color .15s,color .15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.5;cursor:default;transform:none}
+  button.primary{background:var(--accent-press);border-color:var(--accent-deep);color:#fff;font-weight:600}
+  button.primary:hover{background:var(--accent);color:#fff}
+  button.danger:hover{border-color:var(--err);color:var(--err)}
+  button.sm{padding:5px 9px;font-size:var(--fs-xs)}
+  button svg.ic{font-size:15px}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  .tab:focus-visible{outline:2px solid var(--accent);outline-offset:-3px;border-radius:0}
+
+  .hint{color:var(--muted);font-size:var(--fs-xs);margin-top:var(--s3);line-height:1.55}
+  .hint code,.feat code{font-family:var(--mono);background:var(--bg2);padding:1px 5px;border-radius:4px;color:var(--accent)}
+  .onboard{background:rgba(88,166,255,.06);border:1px solid var(--accent-deep);border-radius:var(--r);padding:var(--s4);margin-bottom:var(--s3)}
+  .onboard b{color:var(--text)}
+
+  textarea,input[type=text]{width:100%;font-family:inherit;font-size:var(--fs-md);background:var(--elev);border:1px solid var(--border2);border-radius:6px;padding:9px 11px;color:var(--text);resize:vertical}
+  textarea:focus,input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(88,166,255,.14)}
+  select{font-family:inherit;font-size:var(--fs-sm);background:var(--elev);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;color:var(--text);cursor:pointer}
+
+  .models{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto;padding-right:4px}
+  .chip{font-family:var(--mono);font-size:var(--fs-xs);background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;cursor:pointer;transition:.12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+  .chip:hover{border-color:var(--accent);color:var(--accent);background:var(--elev)}
+
+  /* accounts — flat status bars */
+  .accbar{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s3)}
+  .acc{display:flex;align-items:center;gap:var(--s3);padding:10px 12px;background:var(--card2);
+    border:1px solid var(--border);border-left:3px solid var(--faint);border-radius:0 var(--r) var(--r) 0;margin-bottom:6px;flex-wrap:wrap}
+  .acc.OK{border-left-color:var(--ok)} .acc.WAIT{border-left-color:var(--warn)}
+  .acc.INVALID,.acc.EXPIRED,.acc.ERROR{border-left-color:var(--err)}
+  .acc .id{font-weight:600;font-size:var(--fs-sm)}
+  .acc .acclabel{font-size:var(--fs-xs);color:var(--accent);background:var(--card);border:1px solid var(--border);border-radius:999px;padding:1px 8px}
+  .acc .meta{color:var(--muted);font-size:var(--fs-xs);font-family:var(--mono)}
+  .badge{font-size:var(--fs-xs);font-weight:700;padding:3px 9px;border-radius:4px;display:inline-flex;align-items:center;gap:5px}
+  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .badge.OK{background:rgba(63,185,80,.16);color:#56d364} .badge.WAIT{background:rgba(210,153,34,.18);color:#e3b341}
+  .badge.INVALID,.badge.EXPIRED,.badge.ERROR{background:rgba(248,81,73,.2);color:#ff7b72}
+  .badge.checking{background:rgba(88,166,255,.16);color:var(--accent)}
+  .spacer{flex:1}
+  .relogin-box{display:flex;gap:var(--s2);margin:0 0 6px;padding:0 12px}
+
+  /* chat */
+  .chatbox{display:flex;flex-direction:column;height:64vh;min-height:420px}
+  .msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:var(--s3);padding:var(--s1) var(--s1) var(--s3)}
+  .bubble{max-width:82%;padding:9px 13px;border-radius:12px;font-size:var(--fs-md);word-break:break-word}
+  .bubble.user{align-self:flex-end;background:var(--accent-press);color:#fff;border-bottom-right-radius:3px;white-space:pre-wrap}
+  .bubble.assistant{align-self:flex-start;background:var(--elev);border:1px solid var(--border);border-bottom-left-radius:3px}
+  .bubble.assistant.plain{white-space:pre-wrap}
+  .bubble.err{border-color:var(--err);color:#ff7b72;white-space:pre-wrap}
+  .bubble .role{font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.65;margin-bottom:4px;font-weight:700}
+  .bubble.streaming::after{content:"▍";animation:blink 1s steps(2) infinite;color:var(--accent)}
+  @keyframes blink{50%{opacity:0}}
+  /* markdown inside a response */
+  .md>*:first-child{margin-top:0}.md>*:last-child{margin-bottom:0}
+  .md p{margin:.5em 0}.md ul,.md ol{margin:.5em 0;padding-left:1.4em}.md li{margin:.2em 0}
+  .md code{font-family:var(--mono);font-size:.9em;background:var(--bg2);padding:1px 5px;border-radius:4px}
+  .md pre{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;overflow:auto;margin:.6em 0}
+  .md pre code{background:none;padding:0}
+  .md a{color:var(--accent);text-decoration:underline}
+  .md blockquote{border-left:3px solid var(--border2);margin:.5em 0;padding:.1em 0 .1em 12px;color:var(--muted)}
+  .md table{border-collapse:collapse;margin:.6em 0}.md th,.md td{border:1px solid var(--border);padding:5px 9px}
+  .md h1,.md h2,.md h3{margin:.7em 0 .3em;line-height:1.25}
+
+  .attachments{display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--s2)}
+  .att{display:inline-flex;align-items:center;gap:6px;background:var(--elev);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;font-size:var(--fs-xs)}
+  .att .x{cursor:pointer;color:var(--faint)} .att .x:hover{color:var(--err)}
+  .att.up{opacity:.6}
+  .msg-atts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .msg-atts img{max-width:160px;max-height:160px;border-radius:6px;border:1px solid rgba(255,255,255,.2)}
+  .msg-atts a{font-size:var(--fs-xs);color:#cfe3ff;text-decoration:underline}
+  .chat-input{display:flex;gap:var(--s2);margin-top:var(--s3);align-items:flex-end}
+  .chat-input textarea{min-height:48px;max-height:170px;font-size:16px}
+  .empty{color:var(--muted);font-size:var(--fs-sm);text-align:center;margin:auto;padding:var(--s6);max-width:430px}
+  .empty svg.ic{font-size:28px;color:var(--faint);display:block;margin:0 auto var(--s3)}
+
+  .media-controls{display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center;margin-bottom:var(--s3)}
+  .media-out{min-height:60px}
+  .media-out img,.media-out video{max-width:100%;border-radius:var(--r);border:1px solid var(--border);display:block}
+  .media-actions{display:flex;gap:var(--s3);margin-top:var(--s2);font-size:var(--fs-xs)}
+  .gallery{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s4)}
+  .gthumb{position:relative}
+  .gthumb img{width:116px;height:116px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border);cursor:pointer;transition:.15s;display:block}
+  .gthumb img:hover{border-color:var(--accent)}
+  .gthumb .dl{position:absolute;right:5px;bottom:5px;background:rgba(0,0,0,.6);border-radius:4px;padding:2px 4px;font-size:11px;color:#fff}
+  .spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .statusline{display:flex;align-items:center;gap:var(--s2);color:var(--muted);font-size:var(--fs-sm);margin:var(--s3) 0}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--elev);border:1px solid var(--border2);color:var(--text);font-weight:600;padding:11px 18px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none;font-size:var(--fs-sm);z-index:50;box-shadow:0 6px 22px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.ok{border-color:var(--ok)} .toast.ok svg{color:var(--ok)}
+  .toast.err{border-color:var(--err)} .toast.err svg{color:var(--err)}
+  .err-text{color:#ff7b72}
+  footer{margin-top:var(--s6);text-align:center;color:var(--faint);font-size:var(--fs-xs)}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 2 4 6.5v9L12 22l8-6.5v-9L12 2Z"/><path d="m12 7-4 2.3v4.4L12 16l4-2.3V9.3L12 7Z"/></symbol>
+  <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-accounts" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12Z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.7"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 9 5-3v12l-5-3"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v6M15 2v6"/><path d="M7 8h10v3a5 5 0 0 1-10 0Z"/><path d="M12 16v6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="5"/><path d="m11.5 11.5 8.5 8.5M16 16l3-3M18 18l2-2"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L10 12.7"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header>
+    <h1><svg class="ic logo"><use href="#i-logo"/></svg> QwenBridgeDashboard</h1>
+    <span class="status-pill"><span class="dot" id="statusDot"></span><span id="statusText" role="status" aria-live="polite">checking…</span></span>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" aria-selected="true" aria-controls="tab-chat" id="t-chat" data-tab="chat"><svg class="ic"><use href="#i-chat"/></svg>Chat</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-images" id="t-images" data-tab="images" tabindex="-1"><svg class="ic"><use href="#i-image"/></svg>Images</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-video" id="t-video" data-tab="video" tabindex="-1"><svg class="ic"><use href="#i-video"/></svg>Video</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-overview" id="t-overview" data-tab="overview" tabindex="-1"><svg class="ic"><use href="#i-overview"/></svg>Overview</button>
+  </nav>
+
+  <!-- CHAT -->
+  <section id="tab-chat" class="panel active" role="tabpanel" aria-labelledby="t-chat">
+    <div class="card full chatbox">
+      <h2><svg class="ic"><use href="#i-chat"/></svg>Chat playground <span class="spacer"></span>
+        <select id="chatModel" aria-label="Chat model"></select>
+        <button class="sm" id="clearChat"><svg class="ic"><use href="#i-trash"/></svg>clear</button>
+      </h2>
+      <div class="msgs" id="msgs" role="log" aria-live="polite" aria-label="Chat history"></div>
+      <div class="attachments" id="attachments"></div>
+      <div class="chat-input">
+        <input type="file" id="fileInput" multiple accept="image/*,.pdf,.txt,.md,.doc,.docx" style="display:none">
+        <button class="sm" id="attachBtn" title="Attach files" aria-label="Attach files"><svg class="ic"><use href="#i-clip"/></svg></button>
+        <textarea id="chatInput" aria-label="Message" placeholder="Message… (Enter — send, Shift+Enter — newline)"></textarea>
+        <button class="primary" id="sendChat"><svg class="ic"><use href="#i-send"/></svg>Send</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- IMAGES -->
+  <section id="tab-images" class="panel" role="tabpanel" aria-labelledby="t-images">
+    <div class="card full">
+      <h2><svg class="ic"><use href="#i-image"/></svg>Image generation</h2>
+      <div class="media-controls">
+        <select id="imgModel" aria-label="Model"></select>
+        <select id="imgAspect" aria-label="Aspect ratio"><option>16:9</option><option>1:1</option><option>9:16</option><option>4:3</option></select>
+        <button class="primary" id="imgBtn"><svg class="ic"><use href="#i-image"/></svg>Generate</button>
+      </div>
+      <textarea id="imgPrompt" aria-label="Image prompt" placeholder="Describe the image… (Ctrl+Enter — run)" style="min-height:70px"></textarea>
+      <div class="media-out" id="imgOut" style="margin-top:var(--s3)"><div class="empty"><svg class="ic"><use href="#i-image"/></svg>Generated images will appear here.</div></div>
+      <div class="gallery" id="imgGallery"></div>
+    </div>
+  </section>
+
+  <!-- VIDEO -->
+  <section id="tab-video" class="panel" role="tabpanel" aria-labelledby="t-video">
+    <div class="card full">
+      <h2><svg class="ic"><use href="#i-video"/></svg>Video generation</h2>
+      <div class="media-controls">
+        <select id="vidModel" aria-label="Model"></select>
+        <select id="vidAspect" aria-label="Aspect ratio"><option>16:9</option><option>1:1</option><option>9:16</option></select>
+        <button class="primary" id="vidBtn"><svg class="ic"><use href="#i-video"/></svg>Generate</button>
+        <button class="sm" id="vidCancel" style="display:none">cancel</button>
+      </div>
+      <textarea id="vidPrompt" aria-label="Video prompt" placeholder="Describe the video… (Ctrl+Enter — run)" style="min-height:70px"></textarea>
+      <div class="statusline" id="vidStatus" role="status" aria-live="polite" style="display:none"></div>
+      <div class="media-out" id="vidOut" style="margin-top:var(--s3)"><div class="empty"><svg class="ic"><use href="#i-video"/></svg>Video takes longer to generate — start it and wait.</div></div>
+    </div>
+  </section>
+
+  <!-- OVERVIEW (+ accounts) -->
+  <section id="tab-overview" class="panel" role="tabpanel" aria-labelledby="t-overview">
+    <div class="kpis">
+      <div class="kpi"><div class="num" id="kpiStatus">—</div><div class="lbl"><svg class="ic"><use href="#i-refresh"/></svg>status</div></div>
+      <div class="kpi"><div class="num" id="kpiModels">—</div><div class="lbl"><svg class="ic"><use href="#i-overview"/></svg>models</div></div>
+      <div class="kpi"><div class="num" id="kpiAcc">—</div><div class="lbl"><svg class="ic"><use href="#i-accounts"/></svg>accounts online</div></div>
+      <div class="kpi"><div class="num" id="kpiDead">—</div><div class="lbl"><svg class="ic"><use href="#i-warn"/></svg>limited / dead</div></div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h2><svg class="ic"><use href="#i-plug"/></svg>How to connect</h2>
+        <div class="row"><label class="k">Base URL</label><div class="val" id="baseUrl">—</div><button class="sm" data-copy="baseUrl" aria-label="Copy"><svg class="ic"><use href="#i-copy"/></svg></button></div>
+        <div class="row"><label class="k">Open WebUI</label><div class="val" id="baseUrlApi">—</div><button class="sm" data-copy="baseUrlApi" aria-label="Copy"><svg class="ic"><use href="#i-copy"/></svg></button></div>
+        <div class="row"><label class="k">API Key</label><div class="val">any non-empty value (<b>sk-qwen</b>)</div><button class="sm" data-copy-text="sk-qwen" aria-label="Copy"><svg class="ic"><use href="#i-copy"/></svg></button></div>
+        <div class="row"><label class="k">Model</label><div class="val" id="defModel">qwen3.7-max</div><button class="sm" data-copy="defModel" aria-label="Copy"><svg class="ic"><use href="#i-copy"/></svg></button></div>
+        <div class="row" style="margin-top:var(--s3)">
+          <button class="sm" id="copyCurl"><svg class="ic"><use href="#i-copy"/></svg>cURL</button>
+          <button class="sm" id="copyPy"><svg class="ic"><use href="#i-copy"/></svg>Python</button>
+        </div>
+        <div class="hint">OpenAI SDK — <code>/api/v1</code>, Open WebUI — <code>/api</code>.</div>
+      </div>
+      <div class="card">
+        <h2><svg class="ic"><use href="#i-overview"/></svg>Models (<span id="modelCount">0</span>) <span class="spacer"></span><span class="hint" style="margin:0">click to copy</span></h2>
+        <div class="models" id="modelList"><span class="hint">loading…</span></div>
+      </div>
+      <div class="card full">
+        <h2><svg class="ic"><use href="#i-accounts"/></svg>Qwen accounts <span class="spacer"></span>
+          <button class="sm" id="checkAllBtn"><svg class="ic"><use href="#i-check"/></svg>check all</button></h2>
+        <div id="accList"><span class="hint">loading…</span></div>
+        <div class="row" style="margin-top:var(--s4)">
+          <input type="email" id="newEmail" aria-label="New Qwen email" placeholder="Qwen account email" autocomplete="off" spellcheck="false" style="min-width:0;flex:1">
+          <input type="password" id="newPassword" aria-label="New Qwen password" placeholder="Password" autocomplete="off" spellcheck="false" style="min-width:0;flex:1">
+          <button class="primary" id="addBtn">Add</button>
+        </div>
+        <div class="hint" id="addHint">Qwen account (email + password). Login is validated via Playwright — a browser window may open briefly.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>QwenBridgeDashboard · dashboard</footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const origin = location.origin;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const icon = id => `<svg class="ic"><use href="#${id}"/></svg>`;
+const isImg = f => /^image\//.test(f.type||'') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(f.name||'');
+function toast(m, kind){ const t=$('#toast'); t.innerHTML=(kind==='err'?icon('i-warn'):kind==='ok'?icon('i-check'):'')+'<span>'+esc(m)+'</span>'; t.className='toast show'+(kind?' '+kind:''); clearTimeout(toast._t); toast._t=setTimeout(()=>t.className='toast',1900); }
+async function copyText(t){
+  try{ if(navigator.clipboard && isSecureContext){ await navigator.clipboard.writeText(t); return toast('Copied','ok'); } throw 0; }
+  catch{ try{ const a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); toast('Copied','ok'); }catch{ toast('Failed to copy','err'); } }
+}
+function dlUrl(url, name){ return origin+'/api/download?url='+encodeURIComponent(url)+(name?('&name='+encodeURIComponent(name)):''); }
+function inlineUrl(url){ return origin+'/api/download?url='+encodeURIComponent(url)+'&inline=1'; }
+function errMsg(j){ if(!j) return 'unknown error'; if(typeof j==='string') return j; if(typeof j==='object'&&j.error){ const e=j.error; if(typeof e==='string') return e; if(e.message) return e.message+(e.code?(' ('+e.code+')'):''); } if(j.message) return j.message; if(j.detail) return j.detail; if(j.error) return JSON.stringify(j.error); return 'unknown error'; }
+function mdRender(text){ try{ if(window.marked&&window.DOMPurify){ const html=window.marked.parse(text,{breaks:true}); return window.DOMPurify.sanitize(html,{ADD_ATTR:['target']}); } }catch{} return null; }
+
+const apiV1 = origin+'/api/v1';
+$('#baseUrl').textContent = apiV1;
+$('#baseUrlApi').textContent = origin + '/api';
+
+// ── Tabs ──────────────────────────────────────────────────────────────
+const TABS=['chat','images','video','overview'];
+const inited={};
+function showTab(name){
+  if(!TABS.includes(name)) name='chat';
+  document.querySelectorAll('.tab').forEach(t=>{ const on=t.dataset.tab===name; t.setAttribute('aria-selected',on); t.tabIndex=on?0:-1; });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='tab-'+name));
+  if(location.hash.slice(1)!==name) history.replaceState(null,'','#'+name);
+  if(!inited[name]){ inited[name]=true; lazyInit(name); }
+}
+function lazyInit(name){
+  if(name==='chat') loadChatModels();
+  else if(name==='images') loadImageModels();
+  else if(name==='video') loadVideoModels();
+  else if(name==='overview'){ loadModels(); loadAccounts(); }
+}
+document.querySelectorAll('.tab').forEach(t=> t.onclick=()=>showTab(t.dataset.tab));
+$('.tabs').addEventListener('keydown', e=>{
+  const i=TABS.indexOf(document.activeElement.dataset?.tab); if(i<0) return;
+  let j=null;
+  if(e.key==='ArrowRight') j=(i+1)%TABS.length; else if(e.key==='ArrowLeft') j=(i-1+TABS.length)%TABS.length;
+  else if(e.key==='Home') j=0; else if(e.key==='End') j=TABS.length-1;
+  if(j!==null){ e.preventDefault(); document.getElementById('t-'+TABS[j]).focus(); showTab(TABS[j]); }
+});
+window.addEventListener('hashchange', ()=>showTab((location.hash||'#chat').slice(1)));
+
+document.addEventListener('click', e=>{
+  const b=e.target.closest('[data-copy],[data-copy-text]'); if(!b) return;
+  if(b.dataset.copyText!==undefined) return copyText(b.dataset.copyText);
+  if(b.dataset.copy) return copyText($('#'+b.dataset.copy).textContent.trim());
+});
+const copySnippet=$('#copySnippet'); if(copySnippet) copySnippet.onclick=()=>copyText('copy(localStorage.token)');
+$('#copyCurl').onclick=()=>copyText(`curl ${apiV1}/chat/completions \\\n  -H "Authorization: Bearer sk-qwen" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model":"qwen3.7-max","messages":[{"role":"user","content":"Hello"}]}'`);
+$('#copyPy').onclick=()=>copyText(`from openai import OpenAI\nclient = OpenAI(base_url="${apiV1}", api_key="sk-qwen")\nr = client.chat.completions.create(model="qwen3.7-max",\n    messages=[{"role":"user","content":"Hello"}])\nprint(r.choices[0].message.content)`);
+
+// ── Status + KPI ───────────────────────────────────────────────────────────
+async function loadHealth(){
+  try{
+    const j=await (await fetch(origin+'/api/health')).json();
+    const av=j.accounts?.available??0, tot=j.accounts?.total??0, dead=(j.accounts?.invalid||0)+(j.accounts?.waiting||0);
+    $('#statusDot').className='dot on';
+    $('#statusText').textContent='online · '+(j.models||0)+' models · '+av+'/'+tot+' acc.';
+    $('#kpiStatus').textContent='Online'; $('#kpiStatus').className='num ok';
+    $('#kpiModels').textContent=j.models||0;
+    $('#kpiAcc').textContent=av+' / '+tot; $('#kpiAcc').className='num'+(av?' ok':' err');
+    $('#kpiDead').textContent=dead; $('#kpiDead').className='num'+(dead?' warn':'');
+  }catch{ $('#statusDot').className='dot off'; $('#statusText').textContent='offline'; $('#kpiStatus').textContent='Offline'; $('#kpiStatus').className='num err'; }
+}
+
+// ── Models ─────────────────────────────────────────────────────────────────
+let modelCache=[];
+async function fetchModels(){ if(modelCache.length) return modelCache; try{ const j=await (await fetch(origin+'/api/models')).json(); modelCache=(j.data||[]).map(m=>m.id);}catch{} return modelCache; }
+async function loadModels(){
+  const ids=await fetchModels();
+  $('#modelCount').textContent=ids.length;
+  $('#modelList').innerHTML=ids.map(id=>`<span class="chip" data-model="${esc(id)}">${esc(id)}</span>`).join('')||'<span class="hint err-text">failed to load</span>';
+  if(ids.length && !ids.includes('qwen3.7-max')) $('#defModel').textContent=ids[0];
+}
+document.addEventListener('click', e=>{ const c=e.target.closest('.chip[data-model]'); if(c) copyText(c.dataset.model); });
+
+// ── Accounts ───────────────────────────────────────────────────────────────
+function fmtExp(ms){ if(!ms) return ''; const d=Math.round((ms-Date.now())/864e5); return 'until '+new Date(ms).toISOString().slice(0,10)+(d>=0?' ('+d+' days)':' (expired)'); }
+function fmtTime(iso){ try{ return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }catch{ return ''; } }
+const stLabel=s=>({OK:'active',WAIT:'limited',INVALID:'invalid',EXPIRED:'expired',ERROR:'error'})[s]||s;
+async function loadAccounts(){
+  const list=$('#accList');
+  try{
+    const j=await (await fetch(origin+'/api/accounts')).json();
+    if(!j.accounts||!j.accounts.length){ list.innerHTML='<div class="onboard">No accounts yet. Add a Qwen account below with its <b>email</b> and <b>password</b>. The account is validated automatically via Playwright.</div>'; return; }
+    list.innerHTML=j.accounts.map(a=>{
+      const meta=a.onCooldown?('cooldown '+fmtTime(a.cooldownUntil)):fmtExp(a.cooldownUntil);
+      return `<div class="acc ${a.ready?'active':a.onCooldown?'limited':'idle'}" data-id="${esc(a.id)}">
+        <span class="id">${esc(a.email||a.id)}</span><span class="badge ${a.ready?'OK':a.onCooldown?'WAIT':'IDLE'}">${a.ready?'active':a.onCooldown?'limited':'idle'}</span>${a.label?`<span class="acclabel">${esc(a.label)}</span>`:''}
+        <span class="meta">${esc(meta||'')}</span><span class="spacer"></span>
+        <button class="sm" data-check="${esc(a.id)}" aria-label="Check ${esc(a.id)}">${icon('i-check')}check</button>
+        <button class="sm" data-editlabel="${esc(a.id)}" aria-label="Label ${esc(a.id)}">label</button>
+        <button class="sm" data-relogin="${esc(a.id)}" aria-label="Update password ${esc(a.id)}">${icon('i-key')}password</button>
+        <button class="sm danger" data-del="${esc(a.id)}" aria-label="Delete ${esc(a.id)}">${icon('i-trash')}</button>
+      </div>
+      <div class="relogin-box" data-box="${esc(a.id)}" style="display:none">
+        <input type="password" aria-label="New password for ${esc(a.id)}" placeholder="New Qwen password" data-newpw="${esc(a.id)}" autocomplete="off" spellcheck="false">
+        <button class="primary sm" data-save="${esc(a.id)}">Save</button><button class="sm" data-cancel="${esc(a.id)}">Cancel</button>
+      </div>
+      <div class="relogin-box" data-labelbox="${esc(a.id)}" style="display:none">
+        <input type="text" maxlength="60" aria-label="Label for ${esc(a.id)}" placeholder="Label — to distinguish accounts" data-newlabel="${esc(a.id)}" value="${esc(a.label||'')}" autocomplete="off">
+        <button class="primary sm" data-savelabel="${esc(a.id)}">Save</button><button class="sm" data-cancellabel="${esc(a.id)}">Cancel</button>
+      </div>`;
+    }).join('');
+  }catch{ list.innerHTML='<div class="hint err-text">Failed to load accounts</div>'; }
+}
+$('#checkAllBtn').onclick=async()=>{
+  const b=$('#checkAllBtn'); b.disabled=true;
+  try{
+    const j=await (await fetch(origin+'/api/accounts')).json(); const ids=(j.accounts||[]).map(a=>a.id); let i=0;
+    for(const id of ids){ i++; b.innerHTML=icon('i-refresh')+'checking '+i+'/'+ids.length;
+      try{ await fetch(origin+'/api/accounts/'+encodeURIComponent(id)+'/check',{method:'POST',headers:{'Content-Type':'application/json'}}); }catch{} }
+    await loadAccounts(); await loadHealth(); toast('Checked: '+ids.length,'ok');
+  }catch{ toast('Check error','err'); }
+  b.disabled=false; b.innerHTML=icon('i-check')+'check all';
+};
+$('#addBtn').onclick=async()=>{
+  const email=$('#newEmail').value.trim(), password=$('#newPassword').value;
+  if(!email) return toast('Enter an email','err');
+  if(!password) return toast('Enter a password','err');
+  const btn=$('#addBtn'); btn.disabled=true;
+  try{ const j=await (await fetch(origin+'/api/accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})})).json();
+    if(j.ok){ toast('Added '+j.email,'ok'); $('#newEmail').value=''; $('#newPassword').value=''; loadAccounts(); loadHealth(); } else toast(j.error||'Error','err'); }
+  catch{ toast('Network unavailable','err'); }
+  btn.disabled=false;
+};
+document.addEventListener('click', async e=>{
+  const t=e.target.closest('button'); if(!t) return;
+  if(t.dataset.check){ const badge=t.closest('.acc').querySelector('.badge'); badge.className='badge checking'; badge.textContent='checking'; t.disabled=true;
+    try{ await fetch(origin+'/api/accounts/'+encodeURIComponent(t.dataset.check)+'/check',{method:'POST',headers:{'Content-Type':'application/json'}}); await loadAccounts(); await loadHealth(); }catch{ toast('Error','err'); loadAccounts(); } return; }
+  if(t.dataset.del){ if(!confirm('Delete account '+t.dataset.del+'?')) return; t.disabled=true;
+    try{ await fetch(origin+'/api/accounts/'+encodeURIComponent(t.dataset.del),{method:'DELETE'}); toast('Deleted','ok'); }catch{ toast('Error','err'); } loadAccounts(); loadHealth(); return; }
+  if(t.dataset.relogin){ const b=document.querySelector('[data-box="'+CSS.escape(t.dataset.relogin)+'"]'); if(b){ b.style.display='flex'; b.querySelector('input')?.focus(); } return; }
+  if(t.dataset.cancel){ const b=document.querySelector('[data-box="'+CSS.escape(t.dataset.cancel)+'"]'); if(b) b.style.display='none'; return; }
+  if(t.dataset.save){ const id=t.dataset.save, inp=document.querySelector('[data-newpw="'+CSS.escape(id)+'"]'); const password=(inp?.value||'');
+    if(!password) return toast('Enter a password','err'); t.disabled=true;
+    try{ const j=await (await fetch(origin+'/api/accounts/'+encodeURIComponent(id)+'/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})})).json();
+      if(j.ok){ toast('Password updated: '+id,'ok'); loadAccounts(); loadHealth(); } else { toast(j.error||'Error','err'); t.disabled=false; } }
+    catch{ toast('Network unavailable','err'); t.disabled=false; } return; }
+  if(t.dataset.editlabel){ const b=document.querySelector('[data-labelbox="'+CSS.escape(t.dataset.editlabel)+'"]'); if(b){ b.style.display='flex'; const i=b.querySelector('input'); if(i){ i.focus(); i.select(); } } return; }
+  if(t.dataset.cancellabel){ const b=document.querySelector('[data-labelbox="'+CSS.escape(t.dataset.cancellabel)+'"]'); if(b) b.style.display='none'; return; }
+  if(t.dataset.savelabel){ const id=t.dataset.savelabel, inp=document.querySelector('[data-newlabel="'+CSS.escape(id)+'"]'); const label=(inp?.value||'').trim(); t.disabled=true;
+    try{ const j=await (await fetch(origin+'/api/accounts/'+encodeURIComponent(id)+'/label',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label})})).json();
+      if(j.ok){ toast('Label saved','ok'); loadAccounts(); } else { toast(j.error||'Error','err'); t.disabled=false; } }
+    catch{ toast('Network unavailable','err'); t.disabled=false; } return; }
+});
+setInterval(()=>{ if($('#tab-overview').classList.contains('active') && inited.overview) loadAccounts(); }, 20000);
+
+// ── Chat (history + files + markdown, via /api/chat/completions) ────────────
+let chatHistory=[], chatBusy=false, chatAbort=null, pendingFiles=[];
+async function loadChatModels(){ const ids=await fetchModels(); $('#chatModel').innerHTML=ids.map(id=>`<option ${id==='qwen3.7-max'?'selected':''}>${esc(id)}</option>`).join('')||'<option>qwen3.7-max</option>'; renderChat(); }
+function attHtml(a){ return isImg(a) ? `<img src="${esc(a.url)}" alt="${esc(a.name)}"><a href="${esc(dlUrl(a.url,a.name))}">download</a>` : `<a href="${esc(dlUrl(a.url,a.name))}">${esc(a.name)}</a>`; }
+function bubbleEl(m){
+  const d=document.createElement('div'); d.className='bubble '+m.role+(m.err?' err':'');
+  d.innerHTML='<div class="role">'+(m.role==='user'?'You':'AI')+'</div>';
+  const c=document.createElement('div'); c.className='body';
+  if(m.role==='assistant' && !m.err && m.done){ const html=mdRender(m.content); if(html){ c.className='body md'; c.innerHTML=html; } else { c.textContent=m.content; d.classList.add('plain'); } }
+  else { c.textContent=m.content; if(m.role!=='user') d.classList.add('plain'); }
+  d.appendChild(c);
+  if(m.atts && m.atts.length){ const a=document.createElement('div'); a.className='msg-atts'; a.innerHTML=m.atts.map(attHtml).join(''); d.appendChild(a); }
+  d._c=c; return d;
+}
+function renderChat(){
+  const box=$('#msgs');
+  if(!chatHistory.length){ box.innerHTML='<div class="empty">'+icon('i-chat')+'Start a conversation — streaming response with markdown, context and files are supported.</div>'; return; }
+  box.innerHTML=''; chatHistory.forEach(m=>box.appendChild(bubbleEl(m))); box.scrollTop=box.scrollHeight;
+}
+function atBottom(){ const b=$('#msgs'); return b.scrollHeight-b.scrollTop-b.clientHeight<60; }
+function setBusy(b){ chatBusy=b; const btn=$('#sendChat'); btn.innerHTML=b?'Stop':icon('i-send')+'Send'; btn.classList.toggle('danger',b); }
+
+// attachments
+function renderAtts(){
+  $('#attachments').innerHTML=pendingFiles.map((f,i)=>`<span class="att${f.up?' up':''}">${f.up?'<span class="spinner" style="width:11px;height:11px"></span>':''}${esc(f.name)}<span class="x" data-rmatt="${i}">✕</span></span>`).join('');
+}
+$('#attachBtn').onclick=()=>$('#fileInput').click();
+$('#fileInput').onchange=async e=>{
+  for(const file of e.target.files){
+    const slot={name:file.name,type:file.type,up:true}; pendingFiles.push(slot); renderAtts();
+    try{ const fd=new FormData(); fd.append('file',file);
+      const j=await (await fetch(origin+'/api/files/upload',{method:'POST',body:fd})).json();
+      if(j.success&&j.file){ slot.url=j.file.url; slot.up=false; slot.type=j.file.type||slot.type; }
+      else { pendingFiles=pendingFiles.filter(x=>x!==slot); toast(j.error||'Upload error '+file.name,'err'); }
+    }catch{ pendingFiles=pendingFiles.filter(x=>x!==slot); toast('Failed to upload '+file.name,'err'); }
+    renderAtts();
+  }
+  e.target.value='';
+  if(pendingFiles.length){ const m=$('#chatModel').value; if(!/vl|plus/i.test(m)) toast('For files, qwen3.7-plus or qwen3-vl-plus is better','ok'); }
+};
+$('#attachments').onclick=e=>{ const x=e.target.closest('[data-rmatt]'); if(x){ pendingFiles.splice(+x.dataset.rmatt,1); renderAtts(); } };
+
+async function sendChat(){
+  if(chatBusy){ chatAbort?.abort(); return; }
+  const text=$('#chatInput').value.trim();
+  const atts=pendingFiles.filter(f=>f.url&&!f.up);
+  if(!text && !atts.length) return;
+  const userMsg={role:'user',content:text,atts:atts.map(a=>({name:a.name,url:a.url,type:a.type}))};
+  chatHistory.push(userMsg); pendingFiles=[]; renderAtts(); $('#chatInput').value='';
+  const asst={role:'assistant',content:''}; chatHistory.push(asst);
+  const box=$('#msgs'); if(chatHistory.length===2) box.innerHTML='';
+  box.appendChild(bubbleEl(userMsg));
+  const node=bubbleEl(asst); node.classList.add('streaming','plain'); box.appendChild(node); box.scrollTop=box.scrollHeight;
+  setBusy(true); chatAbort=new AbortController();
+
+  // build OpenAI messages: history (text) + latest user with attachments
+  const msgs=chatHistory.slice(0,-1).map((m,idx,arr)=>{
+    if(idx===arr.length-1 && m.role==='user' && userMsg.atts.length){
+      const imgs=userMsg.atts.filter(isImg), docs=userMsg.atts.filter(a=>!isImg(a));
+      const content = imgs.length ? [{type:'text',text:m.content||''},...imgs.map(a=>({type:'image_url',image_url:{url:a.url}}))] : (m.content||'');
+      const out={role:'user',content};
+      if(docs.length) out.files=docs.map(a=>({name:a.name,url:a.url,type:a.type}));
+      return out;
+    }
+    return {role:m.role,content:m.content};
+  });
+
+  try{
+    const r=await fetch(origin+'/api/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},signal:chatAbort.signal,
+      body:JSON.stringify({model:$('#chatModel').value,messages:msgs,stream:true})});
+    if(!r.ok||!r.body) throw new Error('HTTP '+r.status);
+    const reader=r.body.getReader(), dec=new TextDecoder(); let buf='';
+    while(true){
+      const {value,done}=await reader.read(); if(done) break;
+      buf+=dec.decode(value,{stream:true}); const lines=buf.split('\n'); buf=lines.pop()||'';
+      for(const line of lines){ const s=line.trim(); if(!s.startsWith('data:')) continue; const p=s.slice(5).trim(); if(p==='[DONE]'){ buf=''; break; }
+        try{ const d=JSON.parse(p).choices?.[0]?.delta?.content; if(d){ asst.content+=d; node._c.textContent=asst.content; if(atBottom()) box.scrollTop=box.scrollHeight; } }catch{} }
+    }
+    if(!asst.content){ chatHistory.pop(); node.remove(); toast('Empty response','err'); }
+    else { asst.done=true; const html=mdRender(asst.content); if(html){ node.classList.remove('plain'); node._c.className='body md'; node._c.innerHTML=html; } if(atBottom()) box.scrollTop=box.scrollHeight; }
+  }catch(e){
+    if(e.name==='AbortError'){ if(!asst.content){ chatHistory.pop(); node.remove(); } else asst.done=true; }
+    else { asst.content='⚠ '+e.message; node._c.textContent=asst.content; node.classList.add('err'); asst.err=true; }
+  }finally{ node.classList.remove('streaming'); setBusy(false); chatAbort=null; }
+}
+$('#sendChat').onclick=sendChat;
+$('#chatInput').addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendChat(); } });
+$('#clearChat').onclick=()=>{ if(chatBusy) chatAbort?.abort(); chatHistory=[]; pendingFiles=[]; renderAtts(); renderChat(); };
+
+// ── Images ───────────────────────────────────────────────────────────────
+let imgSeq=0;
+async function loadImageModels(){ let ids=['qwen3-vl-plus']; try{ const j=await (await fetch(origin+'/api/images/models')).json(); const g=(j.data||[]).map(m=>m.id); if(g.length) ids=g; }catch{} $('#imgModel').innerHTML=ids.map(id=>`<option ${id==='qwen3-vl-plus'?'selected':''}>${esc(id)}</option>`).join(''); }
+async function genImage(){
+  const prompt=$('#imgPrompt').value.trim(); if(!prompt) return toast('Enter a prompt','err');
+  const seq=++imgSeq; const out=$('#imgOut'); out.innerHTML='<div class="statusline"><span class="spinner"></span> Generating image…</div>'; $('#imgBtn').disabled=true;
+  try{
+    const j=await (await fetch(origin+'/api/images/generations',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt,model:$('#imgModel').value,aspect_ratio:$('#imgAspect').value})})).json();
+    if(seq!==imgSeq) return;
+    const url=j?.data?.[0]?.url; if(!url) throw new Error(errMsg(j));
+    const proxyUrl=inlineUrl(url);
+    out.innerHTML=`<img src="${esc(proxyUrl)}" alt="${esc(prompt)}" loading="lazy"><div class="media-actions"><a href="${esc(proxyUrl)}" target="_blank" rel="noopener">open</a><a href="${esc(dlUrl(url,'qwen-image.png'))}">download</a></div>`;
+    const t=document.createElement('div'); t.className='gthumb';
+    t.innerHTML=`<a href="${esc(proxyUrl)}" target="_blank" rel="noopener"><img src="${esc(proxyUrl)}" alt="${esc(prompt)}" loading="lazy" title="${esc(prompt)}"></a><a class="dl" href="${esc(dlUrl(url,'qwen-image.png'))}">↓</a>`;
+    $('#imgGallery').prepend(t);
+  }catch(e){ if(seq===imgSeq){ out.innerHTML='<span class="err-text">'+icon('i-warn')+' '+esc(e.message)+'</span> <button class="sm" onclick="genImage()">retry</button>'; } }
+  $('#imgBtn').disabled=false;
+}
+$('#imgBtn').onclick=genImage;
+$('#imgPrompt').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); genImage(); }});
+
+// ── Video ────────────────────────────────────────────────────────────────────
+let videoPoll=null, videoCancelled=false;
+function vidStatus(msg,busy){ const s=$('#vidStatus'); s.style.display='flex'; s.innerHTML=(busy?'<span class="spinner"></span> ':'')+esc(msg); }
+async function loadVideoModels(){ let ids=['wan2.6-t2v','wan2.5-t2v-preview','wan2.2-t2v-flash']; try{ const j=await (await fetch(origin+'/api/images/models')).json(); const g=(j.data||[]).map(m=>m.id).filter(id=>/(wan.*t2v|t2v|video)/i.test(id)); if(g.length) ids=g; }catch{} $('#vidModel').innerHTML=ids.map(id=>`<option ${id==='wan2.6-t2v'?'selected':''}>${esc(id)}</option>`).join(''); }
+async function genVideo(){
+  const prompt=$('#vidPrompt').value.trim(); if(!prompt) return toast('Enter a prompt','err');
+  clearTimeout(videoPoll); videoCancelled=false; $('#vidBtn').disabled=true; $('#vidCancel').style.display=''; $('#vidOut').innerHTML=''; vidStatus('Creating task…',true);
+  try{
+    const j=await (await fetch(origin+'/api/videos/generations',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt,model:$('#vidModel').value,aspect_ratio:$('#vidAspect').value,wait:false})})).json();
+    const url=j.video_url||j.media_url; if(url) return showVideo(url);
+    if(!j.task_id) throw new Error(errMsg(j)); pollVideo(j.task_id);
+  }catch(e){ vidStatus('⚠ '+e.message,false); endVideo(); }
+}
+function endVideo(){ $('#vidBtn').disabled=false; $('#vidCancel').style.display='none'; }
+function showVideo(url){ const proxyUrl=inlineUrl(url); $('#vidOut').innerHTML=`<video src="${esc(proxyUrl)}" controls autoplay muted></video><div class="media-actions"><a href="${esc(proxyUrl)}" target="_blank" rel="noopener">open</a><a href="${esc(dlUrl(url,'qwen-video.mp4'))}">download</a></div>`; vidStatus('Done',false); endVideo(); }
+function pollVideo(taskId){
+  const started=Date.now(), MAX=5*60*1000; let n=0;
+  const tick=async()=>{
+    if(videoCancelled) return;
+    n++; const sec=Math.round((Date.now()-started)/1000); vidStatus('Rendering… '+sec+'s (attempt '+n+')',true);
+    if(Date.now()-started>MAX){ vidStatus('⚠ Timeout (5 min). The task may finish later.',false); endVideo(); return; }
+    try{ const j=await (await fetch(origin+'/api/tasks/status/'+encodeURIComponent(taskId)+'?wait=false')).json();
+      const url=j.video_url||j.media_url;
+      if(j.status==='completed'||url){ return url?showVideo(url):(vidStatus('⚠ completed without URL',false),endVideo()); }
+      if(j.status==='failed'){ vidStatus('⚠ '+errMsg(j.error||j),false); endVideo(); return; }
+    }catch{}
+    videoPoll=setTimeout(tick,4000);
+  };
+  videoPoll=setTimeout(tick,4000);
+}
+$('#vidBtn').onclick=genVideo;
+$('#vidCancel').onclick=()=>{ videoCancelled=true; clearTimeout(videoPoll); vidStatus('Cancelled',false); endVideo(); };
+$('#vidPrompt').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); genVideo(); }});
+
+// ── Start ──────────────────────────────────────────────────────────────────
+showTab((location.hash||'#chat').slice(1)||'chat');
+loadHealth(); setInterval(loadHealth, 15000);
+</script>
+</body>
+</html>

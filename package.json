@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npx tsx src/index.ts",
+    "mcp": "node mcp/server.cjs",
     "login": "npx tsx src/login.ts",
     "delete-chats": "npx tsx src/delete-chats.ts",
     "test": "npm run test:mock && npm run test:live",

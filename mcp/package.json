@@ -1,0 +1,13 @@
+{
+  "name": "qwen-media-creator",
+  "version": "1.1.0",
+  "description": "MCP server (stdio) exposing generate_image / generate_video tools backed by QwenBridge /v1 media endpoints",
+  "private": true,
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

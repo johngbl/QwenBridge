@@ -2715,11 +2715,16 @@ export async function createQwenStream(
 
     let response: Response;
     let captchaRecoveryAttempted = false;
-    const retryAfterCaptchaRecovery = async (label: string): Promise<boolean> => {
+    const retryAfterCaptchaRecovery = async (
+      label: string,
+      challengeBody: string,
+    ): Promise<boolean> => {
       if (captchaRecoveryAttempted || !accountId) return false;
       captchaRecoveryAttempted = true;
 
-      const solved = await recoverBaxiaCaptcha(accountId, label);
+      const solved = await recoverBaxiaCaptcha(accountId, label, {
+        challengeBody,
+      });
       if (!solved) return false;
 
       // The challenge may have rotated bx-* values or session cookies. Refresh
@@ -2790,7 +2795,10 @@ export async function createQwenStream(
 
         if (
           antiBotChallenge &&
-          (await retryAfterCaptchaRecovery(`chat ${chatSessionId ?? "new"}`))
+          (await retryAfterCaptchaRecovery(
+            `chat ${chatSessionId ?? "new"}`,
+            preview,
+          ))
         ) {
           retriedNonSseResponse = true;
           continue;
@@ -2860,7 +2868,10 @@ export async function createQwenStream(
 
           if (
             antiBotChallenge &&
-            (await retryAfterCaptchaRecovery(`chat ${chatSessionId ?? "new"}`))
+            (await retryAfterCaptchaRecovery(
+              `chat ${chatSessionId ?? "new"}`,
+              errText,
+            ))
           ) {
             retriedNonSseResponse = true;
             continue;
@@ -2907,7 +2918,10 @@ export async function createQwenStream(
 
       if (
         antiBotChallenge &&
-        (await retryAfterCaptchaRecovery(`chat ${chatSessionId ?? "new"}`))
+        (await retryAfterCaptchaRecovery(
+          `chat ${chatSessionId ?? "new"}`,
+          errText,
+        ))
       ) {
         const recoveredContentType = response.headers.get("content-type") || "";
         if (

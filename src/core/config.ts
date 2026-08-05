@@ -32,6 +32,7 @@ const envSchema = z
     CAPTCHA_SOLVER_TIMEOUT_MS: z.string().default("15000"),
     CAPTCHA_SOLVER_RETRY_DELAY_MS: z.string().default("1000"),
     CAPTCHA_SOLVER_SETTLE_MS: z.string().default("2000"),
+    CAPTCHA_ACCOUNT_COOLDOWN_MS: z.string().default("120000"),
     OSS_MULTIPART_THRESHOLD_MB: z.string().default("5"),
     CHAT_REQUEST_LOG: z.string().default("false"),
     HTTP_TIMEOUT: z.string().default("10000"),
@@ -121,6 +122,8 @@ export const config = {
     timeoutMs: Math.max(0, parseInt(env.CAPTCHA_SOLVER_TIMEOUT_MS)),
     retryDelayMs: Math.max(0, parseInt(env.CAPTCHA_SOLVER_RETRY_DELAY_MS)),
     settleMs: Math.max(0, parseInt(env.CAPTCHA_SOLVER_SETTLE_MS)),
+    /** Rest an account whose challenge could not be cleared before reusing it. */
+    accountCooldownMs: Math.max(0, parseInt(env.CAPTCHA_ACCOUNT_COOLDOWN_MS)),
   },
   oss: {
     multipartThresholdBytes: Math.max(

@@ -331,6 +331,7 @@ npm run typecheck  # tipos
 | `CAPTCHA_SOLVER_TIMEOUT_MS` | `15000` | Tempo para o iframe Baxia aparecer |
 | `CAPTCHA_SOLVER_RETRY_DELAY_MS` | `1000` | Espera entre tentativas do slider |
 | `CAPTCHA_SOLVER_SETTLE_MS` | `2000` | Tempo para confirmar cookies/DOM após o arrasto |
+| `CAPTCHA_ACCOUNT_COOLDOWN_MS` | `120000` | Cooldown da conta quando o desafio não pôde ser resolvido; `0` desliga |
 
 ### Headers anti-bot
 
@@ -429,9 +430,12 @@ Detecta, entre outros:
 **Fluxo:**
 
 1. Identifica o WAF/captcha sem expor o HTML do desafio ao cliente
-2. Se `CAPTCHA_SOLVER_ENABLED=true`, detecta o diálogo Baxia visível e procura o iframe aninhado, o iframe legado ou o documento NC diretamente na página da mesma conta; então executa o slider com limite de tentativas
-3. Após sucesso, captura novamente cookies/headers e repete a requisição original na mesma conta
-4. Se o solver estiver desligado ou falhar, retorna ao retry sanitizado existente sem cooldown/rotação de conta
+2. Se `CAPTCHA_SOLVER_ENABLED=true`, detecta o diálogo Baxia já visível e procura o iframe aninhado, o iframe legado ou o documento NC diretamente na página da mesma conta
+3. Se nada estiver visível — o caso normal, porque o completion roda como `fetch` em background e o WAF responde o documento de punish ao XHR em vez de renderizar algo — extrai a URL do desafio do corpo da resposta e abre essa URL na própria página da conta; sem URL utilizável, recarrega a página de chat para forçar o desafio a aparecer. Só a origem configurada em `QWEN_BASE_URL` pode ser aberta
+4. Executa o slider com limite de tentativas e volta a página para `/c/new-chat`
+5. Após sucesso, captura novamente cookies/headers e repete a requisição original na mesma conta
+6. Se o solver falhar, a conta entra em cooldown por `CAPTCHA_ACCOUNT_COOLDOWN_MS` e a requisição é encaminhada para **uma** outra conta; percorrer o pool inteiro apenas faria o WAF desafiar todas as contas
+7. Uma recuperação que falhou é ignorada por 30s na mesma conta, para o retry loop não gastar o orçamento do solver em cada tentativa
 
 Com Playwright, cada conta usa fingerprint e headers capturados do browser real.
 
